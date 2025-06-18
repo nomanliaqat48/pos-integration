@@ -5,7 +5,7 @@ const { loadEnv } = require('./config/env');
 const { buildOrderXML } = require('./services/xmlBuilder');
 const { uploadToFTP } = require('./services/ftpUploader');
 const logger = require('./utils/logger');
-const { checkAndDownloadXML } = require('./services/downloader');
+const { initializeCronJobs } = require('./services/cronService');
 
 // Load environment variables
 loadEnv();
@@ -14,7 +14,6 @@ loadEnv();
 const app = express();
 
 // Constants
-const XML_CHECK_INTERVAL = 3 * 60 * 1000; // 3 minutes in milliseconds
 const WEBHOOK_PATH = '/webhook/order/create';
 
 // Middleware setup
@@ -46,10 +45,10 @@ const handleWebhook = async (req, res) => {
     try {
         const order = JSON.parse(req.body);
         logger.info(`Verified webhook from ${shop} for ${topic}`);
-        logger.info(`Processing Order ID: ${order.id}`);
+        logger.info(`Processing Order ID: ${order?.order_number}`);
 
         const xmlContent = buildOrderXML(order);
-        const fileName = `order_${order.id}.xml`;
+        const fileName = `order_${order?.order_number}.xml`;
 
         await uploadToFTP(xmlContent, fileName);
         logger.info(`Successfully uploaded: ${fileName}`);
@@ -65,12 +64,8 @@ const handleWebhook = async (req, res) => {
 app.post(WEBHOOK_PATH, verifyWebhook, handleWebhook);
 // app.post(WEBHOOK_PATH, handleWebhook);
 
-// Start periodic XML check
-setInterval(() => {
-    checkAndDownloadXML().catch(error => {
-        logger.error('XML check failed:', error);
-    });
-}, XML_CHECK_INTERVAL);
+// Initialize cron jobs
+initializeCronJobs();
 
 // Start server
 const PORT = process.env.PORT || 3000;

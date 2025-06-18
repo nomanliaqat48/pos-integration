@@ -1,8 +1,9 @@
 const Client = require('ssh2-sftp-client');
-const sftp = new Client();
 const logger = require('../utils/logger');
 
 async function uploadToFTP(xmlContent, fileName) {
+  const sftp = new Client();
+  
   try {
     logger.info(`Connecting to SFTP server: ${process.env.FTP_HOST}`);
     
