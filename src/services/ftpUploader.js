@@ -1,5 +1,6 @@
 const Client = require('ssh2-sftp-client');
 const logger = require('../utils/logger');
+const { encryptData } = require('../utils/encryption');
 
 async function uploadToFTP(xmlContent, fileName) {
   const sftp = new Client();
@@ -26,11 +27,23 @@ async function uploadToFTP(xmlContent, fileName) {
       throw new Error(`Remote directory ${process.env.FTP_REMOTE_PATH} not accessible`);
     }
 
+    // Apply encryption if configured
+    let contentToUpload = xmlContent;
+    const encryptionType = process.env.FTP_ENCRYPTION_TYPE;
+    const encryptionKey = process.env.FTP_ENCRYPTION_KEY;
+    
+    if (encryptionType && encryptionKey) {
+      logger.info(`Applying ${encryptionType.toUpperCase()} encryption to XML content`);
+      contentToUpload = encryptData(xmlContent, encryptionType, encryptionKey);
+    } else {
+      logger.info('No encryption configured, uploading XML as plain text');
+    }
+
     // Upload the file
     const remotePath = `${process.env.FTP_REMOTE_PATH}/${fileName}`;
     logger.info(`Uploading file to: ${remotePath}`);
     
-    await sftp.put(Buffer.from(xmlContent), remotePath);
+    await sftp.put(Buffer.from(contentToUpload), remotePath);
     logger.info('File uploaded successfully');
 
     // Close the connection

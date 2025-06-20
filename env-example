@@ -6,3 +6,8 @@ FTP_USER=
 FTP_PASS=
 FTP_PORT=
 FTP_REMOTE_PATH=
+
+# Encryption Configuration
+FTP_ENCRYPTION_TYPE=3des
+#FTP_ENCRYPTION_TYPE=xor
+FTP_ENCRYPTION_KEY=attaria-test-key
