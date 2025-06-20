@@ -3,22 +3,25 @@ const logger = require('./logger');
 
 /**
  * 3DES Encryption (Triple Data Encryption Standard)
- * Uses three different keys for enhanced security
+ * Uses fixed IV for maximum compatibility
  */
 function encrypt3DES(data, key) {
   try {
     // Ensure key is 24 bytes (192 bits) for 3DES
     let finalKey = key;
     if (key.length < 24) {
-      // Pad key to 24 bytes
       finalKey = key.padEnd(24, '0');
     } else if (key.length > 24) {
-      // Truncate key to 24 bytes
       finalKey = key.substring(0, 24);
     }
 
+    // Use a fixed IV (8 bytes of zeros) for compatibility
+    const algorithm = 'des-ede3-cbc';
+    const iv = Buffer.alloc(8, 0);
+    const keyBuffer = Buffer.from(finalKey);
+    
     // Create 3DES cipher
-    const cipher = crypto.createCipher('des-ede3', finalKey);
+    const cipher = crypto.createCipheriv(algorithm, keyBuffer, iv);
     let encrypted = cipher.update(data, 'utf8', 'hex');
     encrypted += cipher.final('hex');
     
@@ -43,8 +46,13 @@ function decrypt3DES(encryptedData, key) {
       finalKey = key.substring(0, 24);
     }
 
+    // Use the same fixed IV
+    const algorithm = 'des-ede3-cbc';
+    const iv = Buffer.alloc(8, 0);
+    const keyBuffer = Buffer.from(finalKey);
+
     // Create 3DES decipher
-    const decipher = crypto.createDecipher('des-ede3', finalKey);
+    const decipher = crypto.createDecipheriv(algorithm, keyBuffer, iv);
     let decrypted = decipher.update(encryptedData, 'hex', 'utf8');
     decrypted += decipher.final('utf8');
     
